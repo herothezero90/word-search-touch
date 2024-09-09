@@ -11,11 +11,23 @@
     <link rel="stylesheet" href="styles.css?v=3" />
   </head>
   <body>
-    <div class="d-flex justify-content-center align-items-center vh-100">
-      <div class="grid-container">
+    <div
+      class="d-flex justify-content-center align-items-center vh-100 flex-column"
+    >
+      <!-- Grid Container -->
+      <div class="grid-container mb-4">
         <div id="grid"></div>
       </div>
+      <!-- Words List Container -->
+      <div class="container">
+        <div class="row">
+          <div class="col d-flex justify-content-center">
+            <ul id="words" class="list-inline text-center"></ul>
+          </div>
+        </div>
+      </div>
     </div>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="script.js"></script>
   </body>
