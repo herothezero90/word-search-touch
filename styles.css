@@ -1,0 +1,35 @@
+#grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+  width: 100vw;
+  max-width: 100vh;
+  height: 100vw;
+  max-height: 100vh;
+  margin: 0 auto;
+  /* Centers the grid horizontally */
+}
+
+.cell {
+  border: 1px solid #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+  font-size: 1.5rem;
+}
+
+.marked {
+  background-color: lightblue;
+}
+
+.correct {
+  background-color: yellow;
+}
+
+.incorrect {
+  background-color: grey;
+}
