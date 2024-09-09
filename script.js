@@ -199,7 +199,7 @@ $(document).ready(function () {
         }
       }
     });
-    //    MOUSE UP     -       TOUCH END //
+    //    MOUSE UP   -     TOUCH END //
     $(document).on("mouseup touchend", function () {
       isDragging = false;
 
@@ -209,7 +209,7 @@ $(document).ready(function () {
 
         selectedCells.forEach((index, i) => {
           const cell = $(`.cell[data-index="${index}"]`);
-          cell.removeClass("marked").addClass(colorClass);
+          cell.removeClass("marked incorrect").addClass(colorClass);
 
           if (isHorizontal) {
             if (i === 0) cell.addClass("rounded-left");
@@ -227,13 +227,15 @@ $(document).ready(function () {
             .addClass("incorrect");
         });
         setTimeout(() => {
-          selectedCells.forEach((index) => {
-            $(`.cell[data-index="${index}"]`).removeClass("incorrect");
-          });
+          $(".cell").removeClass("incorrect");
         }, 200);
       }
+
+      selectedCells = [];
+      selectedWord = "";
     });
   }
+
   createGrid();
   cellSelection();
 });
