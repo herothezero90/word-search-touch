@@ -11,6 +11,7 @@ $(document).ready(function () {
 
   $("#words").html(words.map((item) => `<li>${item}</li>`).join(""));
 
+  //    GRID    //
   function createGrid() {
     for (let i = 0; i < gridSize * gridSize; i++) {
       $("#grid").append(`<div class="cell" data-index="${i}"></div>`);
@@ -65,7 +66,7 @@ $(document).ready(function () {
         }
       }
     });
-
+    //    LETTERS   //
     $(".cell").each(function () {
       if ($(this).text() === "") {
         const randomLetter =
@@ -74,37 +75,7 @@ $(document).ready(function () {
       }
     });
   }
-
-  function crossOutWord(word) {
-    // Find the word in the word list and add a class to strike it out
-    $("#words li").each(function () {
-      if ($(this).text() === word) {
-        $(this).css("text-decoration", "line-through");
-      }
-    });
-  }
-
-  function getTouchCell(event) {
-    const touch =
-      event.originalEvent.touches[0] || event.originalEvent.changedTouches[0];
-    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    if ($(element).hasClass("cell")) {
-      return $(element);
-    }
-    return null;
-  }
-
-  function detectDirection() {
-    if (selectedCells.length < 2) return;
-    const firstIndex = selectedCells[0];
-    const secondIndex = selectedCells[1];
-
-    const firstRow = Math.floor(firstIndex / gridSize);
-    const secondRow = Math.floor(secondIndex / gridSize);
-
-    isHorizontal = firstRow === secondRow;
-  }
-
+  //       CORNERS //
   function applyRoundedCorners() {
     selectedCells.forEach((index) => {
       $(`.cell[data-index="${index}"]`).removeClass(
@@ -126,10 +97,50 @@ $(document).ready(function () {
       }
     }
   }
+  //    CROSS OUT   //
+  function crossOutWord(word) {
+    $("#words li").each(function () {
+      if ($(this).text() === word) {
+        $(this).addClass("crossed");
+      }
+    });
+  }
+  //    DIRECTION //
+  function detectDirection() {
+    if (selectedCells.length < 2) return;
+    const firstIndex = selectedCells[0];
+    const secondIndex = selectedCells[1];
 
+    const firstRow = Math.floor(firstIndex / gridSize);
+    const secondRow = Math.floor(secondIndex / gridSize);
+
+    isHorizontal = firstRow === secondRow;
+  }
+
+  //   RIGHT CLICK PREVENT //
+  $("#grid").on("contextmenu", function (e) {
+    e.preventDefault();
+  });
+
+  //    MOUSE AND TOUCH EVENTS //
+  function getTouchCell(event) {
+    const touch =
+      event.originalEvent.touches[0] || event.originalEvent.changedTouches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    if ($(element).hasClass("cell")) {
+      return $(element);
+    }
+    return null;
+  }
+  //    MOUSE DOWN //
   function cellSelection() {
     $(".cell").on("mousedown touchstart", function (e) {
       e.preventDefault();
+
+      if ($(this).hasClass("correct")) {
+        return;
+      }
+
       isDragging = true;
       selectedCells = [];
       selectedWord = "";
@@ -143,10 +154,16 @@ $(document).ready(function () {
       applyRoundedCorners();
     });
 
+    //    MOUSE MOVE    //
     $(".cell").on("mousemove", function (e) {
       e.preventDefault();
       if (isDragging) {
         const index = $(this).data("index");
+
+        if ($(this).hasClass("correct")) {
+          return;
+        }
+
         const letter = $(this).text();
         if (!selectedCells.includes(index)) {
           $(this).addClass("marked");
@@ -158,11 +175,16 @@ $(document).ready(function () {
         }
       }
     });
-
+    //        TOUCH MOVE     //
     $(".cell").on("touchmove", function (e) {
       e.preventDefault();
       if (isDragging) {
         const $cell = getTouchCell(e);
+
+        if ($cell && $cell.hasClass("correct")) {
+          return;
+        }
+
         if ($cell) {
           const index = $cell.data("index");
           const letter = $cell.text();
@@ -177,7 +199,7 @@ $(document).ready(function () {
         }
       }
     });
-
+    //    MOUSE UP     -       TOUCH END //
     $(document).on("mouseup touchend", function () {
       isDragging = false;
 
@@ -197,7 +219,6 @@ $(document).ready(function () {
             if (i === selectedCells.length - 1) cell.addClass("rounded-bottom");
           }
         });
-
         crossOutWord(selectedWord);
       } else {
         selectedCells.forEach((index) => {
@@ -213,7 +234,6 @@ $(document).ready(function () {
       }
     });
   }
-
   createGrid();
   cellSelection();
 });

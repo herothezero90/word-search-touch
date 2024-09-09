@@ -30,6 +30,19 @@
   margin: 0 10px;
   font-size: 1.5rem;
   font-weight: bold;
+  position: relative;
+}
+
+#words li.crossed::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 5px;
+  background-color: black;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
 }
 
 .marked {
@@ -42,23 +55,23 @@
 
 
 .rounded-left {
-  border-top-left-radius: 30px;
-  border-bottom-left-radius: 30px;
+  border-top-left-radius: 15px;
+  border-bottom-left-radius: 15px;
 }
 
 .rounded-right {
-  border-top-right-radius: 30px;
-  border-bottom-right-radius: 30px;
+  border-top-right-radius: 15px;
+  border-bottom-right-radius: 15px;
 }
 
 .rounded-top {
-  border-top-left-radius: 30px;
-  border-top-right-radius: 30px;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
 }
 
 .rounded-bottom {
-  border-bottom-left-radius: 30px;
-  border-bottom-right-radius: 30px;
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
 }
 
 .incorrect {
