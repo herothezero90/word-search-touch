@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 $(document).ready(function () {
-  const words = ["COW", "GOOSE", "CHICKEN", "PIG", "DUCK", "SHEEP"];
+  const words = ["HELLO", "WORLD", "JQUERY", "CODE"];
   const gridSize = 10;
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let isDragging = false;
@@ -31,6 +31,16 @@ $(document).ready(function () {
     });
   }
 
+  function getTouchCell(event) {
+    const touch =
+      event.originalEvent.touches[0] || event.originalEvent.changedTouches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    if ($(element).hasClass("cell")) {
+      return $(element);
+    }
+    return null;
+  }
+
   function cellSelection() {
     $(".cell").on("mousedown touchstart", function (e) {
       e.preventDefault(); // Prevent default behavior
@@ -45,7 +55,7 @@ $(document).ready(function () {
       selectedWord += letter;
     });
 
-    $(".cell").on("mousemove touchmove", function (e) {
+    $(".cell").on("mousemove", function (e) {
       e.preventDefault(); // Prevent default behavior
       if (isDragging) {
         const index = $(this).data("index");
@@ -54,6 +64,23 @@ $(document).ready(function () {
           $(this).addClass("marked");
           selectedCells.push(index);
           selectedWord += letter;
+        }
+      }
+    });
+
+    // Handle touch move separately
+    $(".cell").on("touchmove", function (e) {
+      e.preventDefault(); // Prevent scrolling
+      if (isDragging) {
+        const $cell = getTouchCell(e); // Get the cell the user is touching
+        if ($cell) {
+          const index = $cell.data("index");
+          const letter = $cell.text();
+          if (!selectedCells.includes(index)) {
+            $cell.addClass("marked");
+            selectedCells.push(index);
+            selectedWord += letter;
+          }
         }
       }
     });
