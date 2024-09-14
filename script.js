@@ -7,8 +7,8 @@ $(document).ready(function () {
   let selectedCells = [];
   let selectedWord = "";
   let wordCount = 0;
-  let isHorizontal = null; // Lock direction (horizontal or vertical)
-  let directionLocked = false; // Flag to lock direction
+  let isHorizontal = null;
+  let directionLocked = false;
 
   $("#words").html(words.map((item) => `<li>${item}</li>`).join(""));
 
@@ -85,19 +85,39 @@ $(document).ready(function () {
     });
 
     if (selectedCells.length > 0) {
+      const firstIndex = selectedCells[0];
+      const lastIndex = selectedCells[selectedCells.length - 1];
+
       if (isHorizontal) {
-        $(`.cell[data-index="${selectedCells[0]}"]`).addClass("rounded-left");
-        $(
-          `.cell[data-index="${selectedCells[selectedCells.length - 1]}"]`
-        ).addClass("rounded-right");
+        const firstCol = firstIndex % gridSize;
+        const lastCol = lastIndex % gridSize;
+
+        if (lastCol >= firstCol) {
+          // Left to right selection
+          $(`.cell[data-index="${firstIndex}"]`).addClass("rounded-left");
+          $(`.cell[data-index="${lastIndex}"]`).addClass("rounded-right");
+        } else {
+          // Right to left selection
+          $(`.cell[data-index="${firstIndex}"]`).addClass("rounded-right");
+          $(`.cell[data-index="${lastIndex}"]`).addClass("rounded-left");
+        }
       } else {
-        $(`.cell[data-index="${selectedCells[0]}"]`).addClass("rounded-top");
-        $(
-          `.cell[data-index="${selectedCells[selectedCells.length - 1]}"]`
-        ).addClass("rounded-bottom");
+        const firstRow = Math.floor(firstIndex / gridSize);
+        const lastRow = Math.floor(lastIndex / gridSize);
+
+        if (lastRow >= firstRow) {
+          // Top to bottom selection
+          $(`.cell[data-index="${firstIndex}"]`).addClass("rounded-top");
+          $(`.cell[data-index="${lastIndex}"]`).addClass("rounded-bottom");
+        } else {
+          // Bottom to top selection
+          $(`.cell[data-index="${firstIndex}"]`).addClass("rounded-bottom");
+          $(`.cell[data-index="${lastIndex}"]`).addClass("rounded-top");
+        }
       }
     }
   }
+
   //    CROSS OUT   //
   function crossOutWord(word) {
     $("#words li").each(function () {
@@ -143,7 +163,7 @@ $(document).ready(function () {
     }
   }
 
-  // DISABLE SELECTED
+  // DISABLE SELECTED  //
   function disableSelectedCells() {
     selectedCells.forEach((index) => {
       const $cell = $(`.cell[data-index="${index}"]`);
@@ -155,17 +175,6 @@ $(document).ready(function () {
   $("#grid").on("contextmenu", function (e) {
     e.preventDefault();
   });
-
-  //    MOUSE AND TOUCH EVENTS //
-  // function getTouchCell(event) {
-  //   const touch =
-  //     event.originalEvent.touches[0] || event.originalEvent.changedTouches[0];
-  //   const element = document.elementFromPoint(touch.clientX, touch.clientY);
-  //   if ($(element).hasClass("cell")) {
-  //     return $(element);
-  //   }
-  //   return null;
-  // }
 
   //    MOUSE DOWN //
   function cellSelection() {
@@ -279,7 +288,7 @@ $(document).ready(function () {
 
       selectedCells = [];
       selectedWord = "";
-      isHorizontal = null; // Reset direction
+      isHorizontal = null;
       directionLocked = false;
       $(".cell").removeClass("marked");
     });
