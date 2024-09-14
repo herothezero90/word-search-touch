@@ -93,11 +93,9 @@ $(document).ready(function () {
         const lastCol = lastIndex % gridSize;
 
         if (lastCol >= firstCol) {
-          // Left to right selection
           $(`.cell[data-index="${firstIndex}"]`).addClass("rounded-left");
           $(`.cell[data-index="${lastIndex}"]`).addClass("rounded-right");
         } else {
-          // Right to left selection
           $(`.cell[data-index="${firstIndex}"]`).addClass("rounded-right");
           $(`.cell[data-index="${lastIndex}"]`).addClass("rounded-left");
         }
@@ -106,11 +104,9 @@ $(document).ready(function () {
         const lastRow = Math.floor(lastIndex / gridSize);
 
         if (lastRow >= firstRow) {
-          // Top to bottom selection
           $(`.cell[data-index="${firstIndex}"]`).addClass("rounded-top");
           $(`.cell[data-index="${lastIndex}"]`).addClass("rounded-bottom");
         } else {
-          // Bottom to top selection
           $(`.cell[data-index="${firstIndex}"]`).addClass("rounded-bottom");
           $(`.cell[data-index="${lastIndex}"]`).addClass("rounded-top");
         }
