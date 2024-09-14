@@ -10,12 +10,23 @@ $(document).ready(function () {
   let wordCount = 0;
   let direction = null;
 
-  const validDirections = [
-    { x: 1, y: 0 },
-    { x: 0, y: 1 },
-    { x: 1, y: 1 }, //DIAGONAL
-    { x: 1, y: -1 }, //DIAGONAL
-  ];
+  const age = 2;
+
+  let validDirections = [];
+
+  if (age === 1) {
+    validDirections = [
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+    ];
+  } else if (age === 2 || age === 3) {
+    validDirections = [
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+      { x: 1, y: 1 },
+      { x: 1, y: -1 },
+    ];
+  }
 
   $("#words").html(words.map((item) => `<li>${item}</li>`).join(""));
 
