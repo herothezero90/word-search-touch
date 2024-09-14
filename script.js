@@ -4,15 +4,22 @@ $(document).ready(function () {
   const gridSize = 10;
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let isDragging = false;
+  let startIndex = null;
   let selectedCells = [];
   let selectedWord = "";
   let wordCount = 0;
-  let isHorizontal = null;
-  let directionLocked = false;
+  let direction = null;
+
+  const validDirections = [
+    { x: 1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 1, y: 1 }, //DIAGONAL
+    { x: 1, y: -1 }, //DIAGONAL
+  ];
 
   $("#words").html(words.map((item) => `<li>${item}</li>`).join(""));
 
-  //    GRID    //
+  // GRID CREATION //
   function createGrid() {
     for (let i = 0; i < gridSize * gridSize; i++) {
       $("#grid").append(`<div class="cell" data-index="${i}"></div>`);
@@ -21,53 +28,42 @@ $(document).ready(function () {
     words.forEach((word) => {
       let placed = false;
       while (!placed) {
-        let isHorizontal = Math.random() > 0.5;
-        if (isHorizontal) {
-          let randomRow = Math.floor(Math.random() * gridSize);
-          let startCol = Math.floor(Math.random() * (gridSize - word.length));
-          let canPlace = true;
+        const dirIndex = Math.floor(Math.random() * validDirections.length);
+        const dir = validDirections[dirIndex];
+        const startRow = Math.floor(Math.random() * gridSize);
+        const startCol = Math.floor(Math.random() * gridSize);
+        let canPlace = true;
+        let positions = [];
 
+        for (let i = 0; i < word.length; i++) {
+          const row = startRow + dir.y * i;
+          const col = startCol + dir.x * i;
+
+          if (row < 0 || row >= gridSize || col < 0 || col >= gridSize) {
+            canPlace = false;
+            break;
+          }
+
+          const index = row * gridSize + col;
+          if ($(`.cell[data-index="${index}"]`).text() !== "") {
+            canPlace = false;
+            break;
+          }
+          positions.push(index);
+        }
+
+        if (canPlace) {
           for (let i = 0; i < word.length; i++) {
-            const index = randomRow * gridSize + startCol + i;
-            if ($(`.cell[data-index="${index}"]`).text() !== "") {
-              canPlace = false;
-              break;
-            }
+            const index = positions[i];
+            $(`.cell[data-index="${index}"]`).text(word[i]);
+            $(`.cell[data-index="${index}"]`).attr("data-word", word);
           }
-
-          if (canPlace) {
-            for (let i = 0; i < word.length; i++) {
-              const index = randomRow * gridSize + startCol + i;
-              $(`.cell[data-index="${index}"]`).text(word[i]);
-              $(`.cell[data-index="${index}"]`).attr("data-word", word);
-            }
-            placed = true;
-          }
-        } else {
-          let randomCol = Math.floor(Math.random() * gridSize);
-          let startRow = Math.floor(Math.random() * (gridSize - word.length));
-          let canPlace = true;
-
-          for (let i = 0; i < word.length; i++) {
-            const index = (startRow + i) * gridSize + randomCol;
-            if ($(`.cell[data-index="${index}"]`).text() !== "") {
-              canPlace = false;
-              break;
-            }
-          }
-
-          if (canPlace) {
-            for (let i = 0; i < word.length; i++) {
-              const index = (startRow + i) * gridSize + randomCol;
-              $(`.cell[data-index="${index}"]`).text(word[i]);
-              $(`.cell[data-index="${index}"]`).attr("data-word", word);
-            }
-            placed = true;
-          }
+          placed = true;
         }
       }
     });
-    //    LETTERS   //
+
+    // POPULATE CELLS //
     $(".cell").each(function () {
       if ($(this).text() === "") {
         const randomLetter =
@@ -76,45 +72,8 @@ $(document).ready(function () {
       }
     });
   }
-  //       CORNERS //
-  function applyRoundedCorners() {
-    selectedCells.forEach((index) => {
-      $(`.cell[data-index="${index}"]`).removeClass(
-        "rounded-left rounded-right rounded-top rounded-bottom"
-      );
-    });
 
-    if (selectedCells.length > 0) {
-      const firstIndex = selectedCells[0];
-      const lastIndex = selectedCells[selectedCells.length - 1];
-
-      if (isHorizontal) {
-        const firstCol = firstIndex % gridSize;
-        const lastCol = lastIndex % gridSize;
-
-        if (lastCol >= firstCol) {
-          $(`.cell[data-index="${firstIndex}"]`).addClass("rounded-left");
-          $(`.cell[data-index="${lastIndex}"]`).addClass("rounded-right");
-        } else {
-          $(`.cell[data-index="${firstIndex}"]`).addClass("rounded-right");
-          $(`.cell[data-index="${lastIndex}"]`).addClass("rounded-left");
-        }
-      } else {
-        const firstRow = Math.floor(firstIndex / gridSize);
-        const lastRow = Math.floor(lastIndex / gridSize);
-
-        if (lastRow >= firstRow) {
-          $(`.cell[data-index="${firstIndex}"]`).addClass("rounded-top");
-          $(`.cell[data-index="${lastIndex}"]`).addClass("rounded-bottom");
-        } else {
-          $(`.cell[data-index="${firstIndex}"]`).addClass("rounded-bottom");
-          $(`.cell[data-index="${lastIndex}"]`).addClass("rounded-top");
-        }
-      }
-    }
-  }
-
-  //    CROSS OUT   //
+  // CROSS OUT FOUND WORD //
   function crossOutWord(word) {
     $("#words li").each(function () {
       if ($(this).text() === word) {
@@ -122,44 +81,8 @@ $(document).ready(function () {
       }
     });
   }
-  //    DIRECTION //
-  function detectDirection() {
-    if (selectedCells.length < 2) return true;
-    const firstIndex = selectedCells[0];
-    const secondIndex = selectedCells[1];
 
-    const firstRow = Math.floor(firstIndex / gridSize);
-    const secondRow = Math.floor(secondIndex / gridSize);
-    const firstCol = firstIndex % gridSize;
-    const secondCol = secondIndex % gridSize;
-
-    if (firstRow === secondRow) {
-      isHorizontal = true;
-    } else if (firstCol === secondCol) {
-      isHorizontal = false;
-    } else {
-      return false;
-    }
-
-    directionLocked = true;
-    return true;
-  }
-
-  function isValidDirection(index) {
-    const firstIndex = selectedCells[0];
-    const firstRow = Math.floor(firstIndex / gridSize);
-    const firstCol = firstIndex % gridSize;
-    const currentRow = Math.floor(index / gridSize);
-    const currentCol = index % gridSize;
-
-    if (isHorizontal) {
-      return firstRow === currentRow;
-    } else {
-      return firstCol === currentCol;
-    }
-  }
-
-  // DISABLE SELECTED  //
+  // DISABLE SELECTED CELLS //
   function disableSelectedCells() {
     selectedCells.forEach((index) => {
       const $cell = $(`.cell[data-index="${index}"]`);
@@ -167,12 +90,27 @@ $(document).ready(function () {
     });
   }
 
-  //   RIGHT CLICK PREVENT //
+  // GET CLIENT COORDINATES (MOUSE OR TOUCH) //
+  function getClientCoordinates(e) {
+    let clientX, clientY;
+    if (e.type.includes("touch")) {
+      const touch =
+        e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
+      clientX = touch.clientX;
+      clientY = touch.clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    return { clientX, clientY };
+  }
+
+  // PREVENT RIGHT-CLICK //
   $("#grid").on("contextmenu", function (e) {
     e.preventDefault();
   });
 
-  //    MOUSE DOWN //
+  // CELL SELECTION //
   function cellSelection() {
     $(".cell").on("mousedown touchstart", function (e) {
       e.preventDefault();
@@ -184,90 +122,91 @@ $(document).ready(function () {
       isDragging = true;
       selectedCells = [];
       selectedWord = "";
-      directionLocked = false;
-      isHorizontal = null;
+      direction = null;
 
-      const index = $(this).data("index");
+      startIndex = $(this).data("index");
       const letter = $(this).text();
-      $(this).addClass("marked");
-      selectedCells.push(index);
+
+      selectedCells.push(startIndex);
       selectedWord += letter;
 
-      applyRoundedCorners();
+      $(".cell").removeClass("marked");
+      $(this).addClass("marked");
     });
 
-    //    MOUSE MOVE    //
+    // MOUSE MOVE  TOUCH MOVE //
     $(document).on("mousemove touchmove", function (e) {
       if (!isDragging) return;
       e.preventDefault();
 
-      let clientX, clientY;
-      if (e.type === "touchmove") {
-        const touch =
-          e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
-        clientX = touch.clientX;
-        clientY = touch.clientY;
-      } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
-      }
-
+      const { clientX, clientY } = getClientCoordinates(e);
       const element = document.elementFromPoint(clientX, clientY);
 
-      if (!$(element).hasClass("cell")) {
-        return;
-      }
+      if (!$(element).hasClass("cell")) return;
 
       const $cell = $(element);
-      const index = $cell.data("index");
+      const currentIndex = $cell.data("index");
 
-      if ($cell.hasClass("correct") || $cell.hasClass("disabled")) {
+      if (currentIndex === startIndex) return;
+
+      const result = getCellsInLine(startIndex, currentIndex);
+
+      if (!result) return;
+
+      // REMOVE MARK
+      $(".cell").removeClass("marked");
+
+      selectedCells = result.path;
+      direction = result.direction;
+
+      selectedWord = selectedCells
+        .map((index) => $(`.cell[data-index="${index}"]`).text())
+        .join("");
+
+      // MARK
+      selectedCells.forEach((index) => {
+        $(`.cell[data-index="${index}"]`).addClass("marked");
+      });
+    });
+
+    // MOUSE UP / TOUCH END //
+    $(document).on("mouseup touchend", function () {
+      const isAllowedDirection = validDirections.some(
+        (dir) =>
+          (dir.x === direction.x && dir.y === direction.y) ||
+          (dir.x === -direction.x && dir.y === -direction.y)
+      );
+
+      if (!isDragging) return;
+      isDragging = false;
+
+      if (!direction) {
+        resetSelection();
         return;
       }
 
-      const letter = $cell.text();
-      if (!selectedCells.includes(index)) {
-        if (selectedCells.length === 1 && !directionLocked) {
-          selectedCells.push(index);
-          selectedWord += letter;
-
-          if (!detectDirection()) {
-            isDragging = false;
-            $cell.removeClass("marked");
-            return;
-          }
-        } else {
-          if (directionLocked && !isValidDirection(index)) {
-            return;
-          }
-          selectedCells.push(index);
-          selectedWord += letter;
-        }
-
-        $cell.addClass("marked");
-        applyRoundedCorners();
+      if (!isAllowedDirection) {
+        selectedCells.forEach((index) => {
+          $(`.cell[data-index="${index}"]`)
+            .removeClass("marked")
+            .addClass("invalid-direction");
+        });
+        setTimeout(() => {
+          $(".cell").removeClass("invalid-direction");
+        }, 200);
+        resetSelection();
+        return;
       }
-    });
+      // REVERSE WORD //
+      const reversedWord = selectedWord.split("").reverse().join("");
 
-    //    MOUSE UP   -     TOUCH END //
-    $(document).on("mouseup touchend", function () {
-      isDragging = false;
-
-      if (words.includes(selectedWord)) {
+      if (words.includes(selectedWord) || words.includes(reversedWord)) {
         wordCount++;
         const colorClass = `correct-${(wordCount % 10) + 1}`;
 
-        selectedCells.forEach((index, i) => {
+        selectedCells.forEach((index) => {
           const cell = $(`.cell[data-index="${index}"]`);
           cell.removeClass("marked incorrect").addClass(colorClass);
-
-          if (isHorizontal) {
-            if (i === 0) cell.addClass("rounded-left");
-            if (i === selectedCells.length - 1) cell.addClass("rounded-right");
-          } else {
-            if (i === 0) cell.addClass("rounded-top");
-            if (i === selectedCells.length - 1) cell.addClass("rounded-bottom");
-          }
         });
         crossOutWord(selectedWord);
         disableSelectedCells();
@@ -282,12 +221,56 @@ $(document).ready(function () {
         }, 200);
       }
 
-      selectedCells = [];
-      selectedWord = "";
-      isHorizontal = null;
-      directionLocked = false;
-      $(".cell").removeClass("marked");
+      resetSelection();
     });
+  }
+
+  // RESET SELECTION //
+  function resetSelection() {
+    selectedCells = [];
+    selectedWord = "";
+    direction = null;
+    startIndex = null;
+    $(".cell").removeClass("marked");
+  }
+
+  // GET CELLS IN LINE //
+  function getCellsInLine(startIndex, endIndex) {
+    const startRow = Math.floor(startIndex / gridSize);
+    const startCol = startIndex % gridSize;
+    const endRow = Math.floor(endIndex / gridSize);
+    const endCol = endIndex % gridSize;
+
+    const deltaRow = endRow - startRow;
+    const deltaCol = endCol - startCol;
+
+    const gcd = Math.abs(greatestCommonDivisor(deltaRow, deltaCol));
+    const stepRow = deltaRow / gcd || 0;
+    const stepCol = deltaCol / gcd || 0;
+
+    const length = gcd + 1;
+    let path = [];
+    for (let i = 0; i < length; i++) {
+      const row = startRow + stepRow * i;
+      const col = startCol + stepCol * i;
+
+      if (row < 0 || row >= gridSize || col < 0 || col >= gridSize) {
+        return null;
+      }
+
+      const index = row * gridSize + col;
+      path.push(index);
+    }
+
+    return {
+      path: path,
+      direction: { x: stepCol, y: stepRow },
+    };
+  }
+
+  function greatestCommonDivisor(a, b) {
+    if (b === 0) return Math.abs(a);
+    return greatestCommonDivisor(b, a % b);
   }
 
   createGrid();
