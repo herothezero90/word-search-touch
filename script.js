@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 $(document).ready(function () {
   const words = ["CHICKEN", "COW", "GOOSE", "PIG", "SHEEP"];
   const gridSize = 10;
@@ -7,11 +6,12 @@ $(document).ready(function () {
   let selectedCells = [];
   let selectedWord = "";
   let wordCount = 0;
-  let isHorizontal = true;
+  let isHorizontal = null; // Lock direction (horizontal or vertical)
+  let directionLocked = false; // Flag to lock direction
 
   $("#words").html(words.map((item) => `<li>${item}</li>`).join(""));
 
-  //    GRID    //
+  // Create the grid
   function createGrid() {
     for (let i = 0; i < gridSize * gridSize; i++) {
       $("#grid").append(`<div class="cell" data-index="${i}"></div>`);
@@ -66,7 +66,7 @@ $(document).ready(function () {
         }
       }
     });
-    //    LETTERS   //
+
     $(".cell").each(function () {
       if ($(this).text() === "") {
         const randomLetter =
@@ -75,7 +75,8 @@ $(document).ready(function () {
       }
     });
   }
-  //       CORNERS //
+
+  // Apply rounded corners
   function applyRoundedCorners() {
     selectedCells.forEach((index) => {
       $(`.cell[data-index="${index}"]`).removeClass(
@@ -97,7 +98,8 @@ $(document).ready(function () {
       }
     }
   }
-  //    CROSS OUT   //
+
+  // Cross out found word
   function crossOutWord(word) {
     $("#words li").each(function () {
       if ($(this).text() === word) {
@@ -105,7 +107,8 @@ $(document).ready(function () {
       }
     });
   }
-  //    DIRECTION //
+
+  // Detect the direction (horizontal or vertical)
   function detectDirection() {
     if (selectedCells.length < 2) return;
     const firstIndex = selectedCells[0];
@@ -113,37 +116,58 @@ $(document).ready(function () {
 
     const firstRow = Math.floor(firstIndex / gridSize);
     const secondRow = Math.floor(secondIndex / gridSize);
+    const firstCol = firstIndex % gridSize;
+    const secondCol = secondIndex % gridSize;
 
-    isHorizontal = firstRow === secondRow;
-  }
-
-  //   RIGHT CLICK PREVENT //
-  $("#grid").on("contextmenu", function (e) {
-    e.preventDefault();
-  });
-
-  //    MOUSE AND TOUCH EVENTS //
-  function getTouchCell(event) {
-    const touch =
-      event.originalEvent.touches[0] || event.originalEvent.changedTouches[0];
-    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    if ($(element).hasClass("cell")) {
-      return $(element);
+    if (firstRow === secondRow) {
+      isHorizontal = true; // Lock to horizontal
+    } else if (firstCol === secondCol) {
+      isHorizontal = false; // Lock to vertical
+    } else {
+      // Invalid direction (diagonal or mixed)
+      return false;
     }
-    return null;
+
+    directionLocked = true; // Lock the direction
+    return true;
   }
-  //    MOUSE DOWN //
+
+  // Check if movement is valid in the locked direction
+  function isValidDirection(index) {
+    const firstIndex = selectedCells[0];
+    const firstRow = Math.floor(firstIndex / gridSize);
+    const firstCol = firstIndex % gridSize;
+    const currentRow = Math.floor(index / gridSize);
+    const currentCol = index % gridSize;
+
+    if (isHorizontal) {
+      return firstRow === currentRow; // Must be in the same row
+    } else {
+      return firstCol === currentCol; // Must be in the same column
+    }
+  }
+
+  // Disable selected cells
+  function disableSelectedCells() {
+    selectedCells.forEach((index) => {
+      const $cell = $(`.cell[data-index="${index}"]`);
+      $cell.addClass("disabled").off();
+    });
+  }
+
+  // Mouse down or touch start
   function cellSelection() {
     $(".cell").on("mousedown touchstart", function (e) {
       e.preventDefault();
 
-      if ($(this).hasClass("correct")) {
+      if ($(this).hasClass("correct") || $(this).hasClass("disabled")) {
         return;
       }
 
       isDragging = true;
       selectedCells = [];
       selectedWord = "";
+      directionLocked = false; // Reset direction for each new selection
 
       const index = $(this).data("index");
       const letter = $(this).text();
@@ -154,52 +178,37 @@ $(document).ready(function () {
       applyRoundedCorners();
     });
 
-    //    MOUSE MOVE    //
-    $(".cell").on("mousemove", function (e) {
+    // Mouse move or touch move (dragging)
+    $(".cell").on("mousemove touchmove", function (e) {
+      if (!isDragging) return; // Only work if dragging
       e.preventDefault();
-      if (isDragging) {
-        const index = $(this).data("index");
 
-        if ($(this).hasClass("correct")) {
-          return;
+      const index = $(this).data("index");
+
+      if ($(this).hasClass("correct") || $(this).hasClass("disabled")) {
+        return; // Prevent marking disabled cells
+      }
+
+      const letter = $(this).text();
+      if (!selectedCells.includes(index)) {
+        if (selectedCells.length === 1 && !directionLocked) {
+          if (!detectDirection()) return; // Detect the direction after two cells
         }
 
-        const letter = $(this).text();
-        if (!selectedCells.includes(index)) {
-          $(this).addClass("marked");
-          selectedCells.push(index);
-          selectedWord += letter;
-
-          detectDirection();
-          applyRoundedCorners();
+        // Only allow movement in the locked direction
+        if (directionLocked && !isValidDirection(index)) {
+          return; // Block if movement is invalid
         }
+
+        $(this).addClass("marked");
+        selectedCells.push(index);
+        selectedWord += letter;
+
+        applyRoundedCorners();
       }
     });
-    //        TOUCH MOVE     //
-    $(".cell").on("touchmove", function (e) {
-      e.preventDefault();
-      if (isDragging) {
-        const $cell = getTouchCell(e);
 
-        if ($cell && $cell.hasClass("correct")) {
-          return;
-        }
-
-        if ($cell) {
-          const index = $cell.data("index");
-          const letter = $cell.text();
-          if (!selectedCells.includes(index)) {
-            $cell.addClass("marked");
-            selectedCells.push(index);
-            selectedWord += letter;
-
-            detectDirection();
-            applyRoundedCorners();
-          }
-        }
-      }
-    });
-    //    MOUSE UP   -     TOUCH END //
+    // Mouse up or touch end (finalize the selection)
     $(document).on("mouseup touchend", function () {
       isDragging = false;
 
@@ -219,7 +228,9 @@ $(document).ready(function () {
             if (i === selectedCells.length - 1) cell.addClass("rounded-bottom");
           }
         });
+
         crossOutWord(selectedWord);
+        disableSelectedCells();
       } else {
         selectedCells.forEach((index) => {
           $(`.cell[data-index="${index}"]`)
@@ -233,6 +244,7 @@ $(document).ready(function () {
 
       selectedCells = [];
       selectedWord = "";
+      isHorizontal = null; // Reset direction
     });
   }
 
