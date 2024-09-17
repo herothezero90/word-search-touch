@@ -28,6 +28,8 @@ $(document).ready(function () {
     ];
   }
 
+  let z_index = 1;
+  
   $("#words").html(words.map((item) => `<li>${item}</li>`).join(""));
 
   // GRID CREATION //
@@ -125,7 +127,7 @@ $(document).ready(function () {
   function cellSelection() {
     $(".cell").on("mousedown touchstart", function (e) {
       e.preventDefault();
-
+      
       if ($(this).hasClass("correct") || $(this).hasClass("disabled")) {
         return;
       }
@@ -149,7 +151,7 @@ $(document).ready(function () {
     $(document).on("mousemove touchmove", function (e) {
       if (!isDragging) return;
       e.preventDefault();
-
+      
       const { clientX, clientY } = getClientCoordinates(e);
       const element = document.elementFromPoint(clientX, clientY);
 
@@ -169,7 +171,7 @@ $(document).ready(function () {
 
       selectedCells = result.path;
       direction = result.direction;
-
+      
       selectedWord = selectedCells
         .map((index) => $(`.cell[data-index="${index}"]`).text())
         .join("");
@@ -181,13 +183,8 @@ $(document).ready(function () {
     });
 
     // MOUSE UP / TOUCH END //
-    $(document).on("mouseup touchend", function () {
-      const isAllowedDirection = validDirections.some(
-        (dir) =>
-          (dir.x === direction.x && dir.y === direction.y) ||
-          (dir.x === -direction.x && dir.y === -direction.y)
-      );
-
+    $(document).on("mouseup touchend", function (e) {
+      
       if (!isDragging) return;
       isDragging = false;
 
@@ -195,6 +192,12 @@ $(document).ready(function () {
         resetSelection();
         return;
       }
+      
+      const isAllowedDirection = validDirections.some(
+        (dir) =>
+          (dir.x === direction.x && dir.y === direction.y) ||
+          (dir.x === -direction.x && dir.y === -direction.y)
+      );
 
       if (!isAllowedDirection) {
         selectedCells.forEach((index) => {
@@ -214,11 +217,40 @@ $(document).ready(function () {
       if (words.includes(selectedWord) || words.includes(reversedWord)) {
         wordCount++;
         const colorClass = `correct-${(wordCount % 10) + 1}`;
+        selectedCells.sort((a, b) => a - b);
+        selectedCells.forEach((value, index) => {
+          const cell = $(`.cell[data-index="${value}"]`);
+          cell.removeClass("marked incorrect");
+          
+          
+          let angle = 0;
+          let width = 'w-100';
+          let additional_class = '';
 
-        selectedCells.forEach((index) => {
-          const cell = $(`.cell[data-index="${index}"]`);
-          cell.removeClass("marked incorrect").addClass(colorClass);
+          if (index === 0) {
+            // FIRST ELEMENT
+            additional_class = 'border_left';
+          } else if (index === selectedCells.length -1) {
+            // LAST ELEMENT
+            additional_class = 'border_right';
+          }
+
+          if (direction.x === 0 && (direction.y === 1 || direction.y === -1)) { // VERTICAL
+            angle = '90';
+          } else if ((direction.x === 1 && direction.y === 1) || (direction.x === -1 && direction.y === -1)) { // DIAGONAL LEFT
+            angle = '45';
+            width = 'w_diagonal';
+          } else if ((direction.x === 1 && direction.y === -1) || (direction.x === -1 && direction.y === 1)) { // DIAGONAL RIGHT
+            angle = '135';
+            width = 'w_diagonal';
+          }
+
+          const marker_element = `<div class="marker_element ${colorClass} ${width} ${additional_class}" style="transform: rotate(${angle}deg); z-index: ${z_index}"></div>`
+          cell.append(marker_element);
+          z_index +=1;
+         
         });
+
         crossOutWord(selectedWord);
         disableSelectedCells();
       } else {
@@ -286,4 +318,5 @@ $(document).ready(function () {
 
   createGrid();
   cellSelection();
+
 });
